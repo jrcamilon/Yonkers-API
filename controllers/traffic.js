@@ -4,12 +4,13 @@
 // let router = express.Router();
 let mySql = require('mysql');
 let _ = require('lodash');
+let env = require('../config.js');
 var config = {
-    user: "sa",
-    password: "ft3t7pgz",
-    host: "demo.infosol.com",
-    port: "3306",
-    database: 'yonkers'
+    user: env.user,
+    password:env.password,
+    host: env.host,
+    port: env.port,
+    database: env.database
 }
 
 const pool = new mySql.createConnection(config)
