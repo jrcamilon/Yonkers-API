@@ -5,22 +5,28 @@
 let mySql = require('mysql');
 let _ = require('lodash');
 let env = require('../config.js');
-var config = {
-    user: env.user,
-    password:env.password,
+let HttpStatus = require('http-status-codes');
+let Errors = require('../errors');
+
+var pool = mySql.createPool({
+    connectionLimit: 10,
     host: env.host,
-    port: env.port,
-    database: env.database
-}
+    user: env.user,
+    password: env.password,
+    database: env.database,
+    connectionLimit: 100,
+    charset: 'utf8mb4',
+    debug: false
+});
 
 const availableMonthsArray = ['JAN','FEB', 'MAR', 'APR', 'MAY', 'JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
 
-const pool = new mySql.createConnection(config)
-pool.connect(err => {
-    if (err) console.log(err);
-    else console.log('connected to MySQL database:', config.database + 'on host: ' + config.host);
-});
+// const pool = new mySql.createConnection(config)
+// pool.connect(err => {
+//     if (err) console.log(err);
+//     else console.log('connected to MySQL database:', config.database + 'on host: ' + config.host);
+// });
 
 exports.getDashboardTotals = (req,res,next) => {
     const yearsFilter = convertFilterList(req.body.years_filter);
@@ -50,9 +56,29 @@ exports.getDashboardTotals = (req,res,next) => {
     sum(meter_violations) as notices_meter
     from yonkers.stats where stats_year IN ` + ` (${yearsFilter}) ` + ` and stats_month IN ` + `(${monthsFilter});`;
 
-     pool.query(query, (err, response, fields) => {
-        res.send(response);
+    //  pool.query(query, (err, response, fields) => {
+    //     res.send(response);
+    // });
+    pool.getConnection((connectionError, conn) => {
+        if (connectionError) {
+            if (connectionError instanceof Errors.NotFound) {
+                return res.status(HttpStatus.NOT_FOUND).send({message: connectionError.message});  
+            }
+            console.log(connectionError);
+            return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({ error: err, message: err.message }); // 500
+        } else {
+            pool.query(query, (queryError, response) => {
+                if (!queryError) {
+                    res.status(200).send(response);
+                } else {
+                    res.status(400).send(queryError);
+                }
+                conn.release();
+                console.log('connection released for query:', query);
+            });
+        }
     });
+
 }
 
 exports.getTableData = (req,res,next) => {
@@ -84,12 +110,27 @@ exports.getTableData = (req,res,next) => {
     sum(meter_violations) as notices_meter
     from yonkers.stats where stats_year IN ` + ` (${yearsFilter}) ` + ` and stats_month IN ` + `(${monthsFilter})` + ` GROUP by stats_year;`;
 
-     pool.query(query, (err, response, fields) => {
-        res.send(response);
+    pool.getConnection((connectionError, conn) => {
+        if (connectionError) {
+            if (connectionError instanceof Errors.NotFound) {
+                return res.status(HttpStatus.NOT_FOUND).send({message: connectionError.message});  
+            }
+            console.log(connectionError);
+            return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({ error: err, message: err.message }); // 500
+        } else {
+            pool.query(query, (queryError, response) => {
+                if (!queryError) {
+                    res.status(200).send(response);
+                } else {
+                    res.status(400).send(queryError);
+                }
+                conn.release();
+                console.log('connection released for query:', query);
+            });
+        }
     });
 }
 
-// Returns for Kendo Chart Series and Categories
 exports.getBreakDownByMonth = (req,res,next) => {
     const length =  req.body.months_filter.length;
     const allMonths = availableMonthsArray
@@ -116,13 +157,38 @@ exports.getBreakDownByMonth = (req,res,next) => {
     const query = `SELECT stats_year, stats_month, ` + `${type} ` +  `from yonkers.stats 
     WHERE stats_year IN ` + ` (${yearsFilter}) ` + ` and stats_month IN ` + `(${monthsFilter});`;
 
-    pool.query(query, (err, response, fields) => {
-        let dataResponse = Object.values(JSON.parse(JSON.stringify(response)));
-        res.send({
-            series: getKendoChartSeries(dataResponse, length, monthNew),
-            categories: monthNew
-          });
+    // pool.query(query, (err, response, fields) => {
+    //     let dataResponse = Object.values(JSON.parse(JSON.stringify(response)));
+    //     res.send({
+    //         series: getKendoChartSeries(dataResponse, length, monthNew),
+    //         categories: monthNew
+    //       });
+    // });
+    pool.getConnection((connectionError, conn) => {
+        if (connectionError) {
+            if (connectionError instanceof Errors.NotFound) {
+                return res.status(HttpStatus.NOT_FOUND).send({message: connectionError.message});  
+            }
+            console.log(connectionError);
+            return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({ error: err, message: err.message }); // 500
+        } else {
+            pool.query(query, (queryError, response) => {
+                if (!queryError) {
+                    let dataResponse = Object.values(JSON.parse(JSON.stringify(response)));
+
+                    res.status(200).send({
+                        series: getKendoChartSeries(dataResponse, length, monthNew),
+                        categories: monthNew
+                    });
+                } else {
+                    res.status(400).send(queryError);
+                }
+                conn.release();
+                console.log('connection released for query:', query);
+            });
+        }
     });
+
 
 }
 
@@ -157,9 +223,31 @@ exports.getBreakDownByMonthWithDetails = (req,res,next) => {
     const query = `SELECT stats_year, stats_month, ` + ` ${subtype1} ,` +  ` ${subtype2} ,` + ` ${subtype3} ,` +  ` ${subtype4} ` + `from yonkers.stats 
     WHERE stats_year IN ` + ` (${yearsFilter}) ` + ` and stats_month IN ` + `(${monthsFilter});`;
 
-    pool.query(query, (err, response, fields) => {
-        let dataResponse = Object.values(JSON.parse(JSON.stringify(response)));
-        res.send(getBreakDownByMonthWithDetails(length, monthNew, dataResponse, subtype1, subtype2, subtype3, subtype4));
+    // pool.query(query, (err, response, fields) => {
+    //     let dataResponse = Object.values(JSON.parse(JSON.stringify(response)));
+    //     res.send(getBreakDownByMonthWithDetails(length, monthNew, dataResponse, subtype1, subtype2, subtype3, subtype4));
+    // });
+
+    pool.getConnection((connectionError, conn) => {
+        if (connectionError) {
+            if (connectionError instanceof Errors.NotFound) {
+                return res.status(HttpStatus.NOT_FOUND).send({message: connectionError.message});  
+            }
+            console.log(connectionError);
+            return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({ error: err, message: err.message }); // 500
+        } else {
+          
+            pool.query(query, (err, response, fields) => {
+                let dataResponse = Object.values(JSON.parse(JSON.stringify(response)));
+                if (!err) {
+                    res.status(200).send(getBreakDownByMonthWithDetails(length, monthNew, dataResponse, subtype1, subtype2, subtype3, subtype4));
+                } else {
+                    res.status(400).send(queryError);
+                }
+                
+                conn.release();
+            });
+        }
     });
 }
 
