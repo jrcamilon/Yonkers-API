@@ -9,9 +9,45 @@ const traffic = require('./controllers/traffic');
 const health = require('./controllers/health');
 const dashboard = require('./controllers/dashboard');
 // const infoburst = require('./controllers/infoburst');
+const OktaJwtVerifier = require('@okta/jwt-verifier');
+
+const oktaJwtVerifier = new OktaJwtVerifier({
+       issuer: 'https://dev-456721.oktapreview.com/oauth2/default',
+       clientId: '0oairuqk2i2gqj7mZ0h7',
+       assertClaims: {
+         aud: 'api://default',
+       },
+     });
+     
+/**
+ * A simple middleware that asserts valid access tokens and sends 401 responses
+ * if the token is not present or fails validation.  If the token is valid its
+ * contents are attached to req.jwt
+ */
+function authenticationRequired(req, res, next) {
+const authHeader = req.headers.authorization || '';
+const match = authHeader.match(/Bearer (.+)/);
+
+if (!match) {
+       return res.status(401).end();
+}
+
+const accessToken = match[1];
+const expectedAudience = 'api://default';
+
+return oktaJwtVerifier.verifyAccessToken(accessToken, expectedAudience)
+       .then((jwt) => {
+       req.jwt = jwt;
+       next();
+       })
+       .catch((err) => {
+       res.status(401).send(err.message);
+       });
+}
 
 module.exports = function (app) {
        app.get('/', health.health);
+       app.get('/secured', health.secured);
        app.get('/heartbeat', health.heartbeat);
        app.post('/traffic',traffic.getAllTrafficCams);
        app.post('/payments', traffic.getPaymentsForCam);

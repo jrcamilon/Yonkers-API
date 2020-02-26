@@ -56,15 +56,12 @@ exports.getDashboardTotals = (req,res,next) => {
     sum(meter_violations) as notices_meter
     from yonkers.stats where stats_year IN ` + ` (${yearsFilter}) ` + ` and stats_month IN ` + `(${monthsFilter});`;
 
-    //  pool.query(query, (err, response, fields) => {
-    //     res.send(response);
-    // });
     pool.getConnection((connectionError, conn) => {
         if (connectionError) {
             if (connectionError instanceof Errors.NotFound) {
                 return res.status(HttpStatus.NOT_FOUND).send({message: connectionError.message});  
             }
-            console.log(connectionError);
+            // console.log(connectionError);
             return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({ error: err, message: err.message }); // 500
         } else {
             pool.query(query, (queryError, response) => {
@@ -74,7 +71,7 @@ exports.getDashboardTotals = (req,res,next) => {
                     res.status(400).send(queryError);
                 }
                 conn.release();
-                console.log('connection released for query:', query);
+                // console.log('connection released for query:', query);
             });
         }
     });
@@ -115,7 +112,7 @@ exports.getTableData = (req,res,next) => {
             if (connectionError instanceof Errors.NotFound) {
                 return res.status(HttpStatus.NOT_FOUND).send({message: connectionError.message});  
             }
-            console.log(connectionError);
+            // console.log(connectionError);
             return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({ error: err, message: err.message }); // 500
         } else {
             pool.query(query, (queryError, response) => {
@@ -125,7 +122,7 @@ exports.getTableData = (req,res,next) => {
                     res.status(400).send(queryError);
                 }
                 conn.release();
-                console.log('connection released for query:', query);
+                // console.log('connection released for query:', query);
             });
         }
     });
@@ -169,7 +166,7 @@ exports.getBreakDownByMonth = (req,res,next) => {
             if (connectionError instanceof Errors.NotFound) {
                 return res.status(HttpStatus.NOT_FOUND).send({message: connectionError.message});  
             }
-            console.log(connectionError);
+            // console.log(connectionError);
             return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({ error: err, message: err.message }); // 500
         } else {
             pool.query(query, (queryError, response) => {
@@ -184,7 +181,7 @@ exports.getBreakDownByMonth = (req,res,next) => {
                     res.status(400).send(queryError);
                 }
                 conn.release();
-                console.log('connection released for query:', query);
+                // console.log('connection released for query:', query);
             });
         }
     });
@@ -233,7 +230,7 @@ exports.getBreakDownByMonthWithDetails = (req,res,next) => {
             if (connectionError instanceof Errors.NotFound) {
                 return res.status(HttpStatus.NOT_FOUND).send({message: connectionError.message});  
             }
-            console.log(connectionError);
+            // console.log(connectionError);
             return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({ error: err, message: err.message }); // 500
         } else {
           

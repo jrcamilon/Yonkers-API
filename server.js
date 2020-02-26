@@ -21,10 +21,10 @@ res.setHeader("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
 res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Authorization, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
 next(); });
 
-// Error Handling
-app.use(function(err,req,res,next) {
-    console.log(err);
-});
+// // Error Handling
+// app.use(function(err,req,res,next) {
+//     console.log(err);
+// });
 
 router(app);
 
