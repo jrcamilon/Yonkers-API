@@ -254,7 +254,7 @@ exports.getAllStats = (req,res,next) => {
 }
 
 exports.getAllyearsFilters = (req,res,next) => {
-    const query = `select distinct stats_year from yonkers.stats;`;
+    const query = `select distinct stats_year from yonkers.stats order by stats_year;`;
     pool.getConnection((connectionError, conn) => {
         if (connectionError) {
             if (connectionError instanceof Errors.NotFound) {
