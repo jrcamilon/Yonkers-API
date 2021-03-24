@@ -8,6 +8,7 @@
 const traffic = require('./controllers/traffic');
 const health = require('./controllers/health');
 const dashboard = require('./controllers/dashboard');
+const comments = require('./controllers/comments');
 // const infoburst = require('./controllers/infoburst');
 const OktaJwtVerifier = require('@okta/jwt-verifier');
 
@@ -60,6 +61,8 @@ module.exports = function (app) {
        app.get('/statistics/yearfilters', traffic.getAllyearsFilters);
        app.post('/statistics/statsfiltered', traffic.getAllStatsFiltered);
 
+       app.get('/comments/all', comments.getAllComments)
+       app.post('/comments/reply', comments.postReply)
        // app.get('/infoburst/test', infoburst.getInfoburstStats);
 
        app.post('/dashboard/totals', dashboard.getDashboardTotals);
